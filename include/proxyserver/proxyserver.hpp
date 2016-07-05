@@ -26,13 +26,17 @@ class ProxyServerConnection : public boost::enable_shared_from_this<ProxyServerC
     return socket_;
   }
 
-  void ProcessConnection();
+  //异步写socket
+  void WriteConnectionSocket();
 
  private:
   ProxyServerConnection(boost::asio::io_service& io_service)
       : socket_(io_service) {
   }
-  void WriteConnectionHandle(const boost::system::error_code& /*error*/, std::size_t /*bytes_transferred*/) {
+
+  //异步写socket时使用的句柄函数
+  void WriteConnectionSocketHandle(const boost::system::error_code& /*error*/,
+                             std::size_t /*bytes_transferred*/) {
   }
   boost::asio::ip::tcp::socket socket_;
   std::string sendmessage_;
@@ -42,23 +46,24 @@ class ProxyServer {
  public:
   ProxyServer(boost::asio::io_service& io_service, boost::asio::ip::tcp::endpoint& endpoint)
       : acceptor_(io_service, endpoint) {
-    ProcessAccept();
+    ProcessRequestOfClients();
   }
 
  private:
-  void ProcessAccept();
+  //监听新的socket连接
+  void ProcessRequestOfClients();
 
-  void WriteAcceptHandle(ProxyServerConnection::proxser_pointer new_connection,
+  //包装ProxyServerConnection对象，并调用其中的写socket函数
+  void WriteHandleOfClientRequests(ProxyServerConnection::proxser_pointer new_connection,
                          const boost::system::error_code& error) {
     if (!error) {
-      new_connection->ProcessConnection();
+      new_connection->WriteConnectionSocket();
     }
-    ProcessAccept();
+    ProcessRequestOfClients();
   }
   boost::asio::ip::tcp::acceptor acceptor_;
 };
 
 }  //namespace my
-
 
 #endif /* INCLUDE_PROXYSERVER_PROXYSERVER_HPP_ */
