@@ -68,7 +68,7 @@ void my::ClientOfLaunchRequest::ResolveUrl(const std::string& urlOfLanuchRequest
     std::size_t first_match_pos = url.find_first_of("/");                          //查询第一个"/"出现的pos值
     std::string urlProtocol = url.substr(0, (first_match_pos - 1));          //得到url请求的头，http或者https
 
-    /*分解出url中的host，port，内容*/
+    /*分解出url中的host，port，内容（path）*/
     const std::string requestHttp("http");
     const std::string requestHttps("https");
     if (urlProtocol.compare(requestHttp) == 0 || urlProtocol.compare(requestHttps) == 0) {

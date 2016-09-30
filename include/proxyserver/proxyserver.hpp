@@ -57,7 +57,7 @@ class ProxyServer {
   //监听新的socket连接
   void ProcessRequestOfClients();
 
-  //包装ProxyServerConnection对象，并调用其中的写socket函数
+  //包装ProxyServerConnection对象，并调用该对象的写socket函数
   void WriteRequestsOfClientHandle(ProxyServerConnection::proxser_pointer new_connection,
                                    const boost::system::error_code& error) {
     if (!error) {
@@ -90,7 +90,7 @@ class ClientOfLaunchRequest {
   boost::asio::ip::tcp::socket socket_;
   std::string urlOfLanuchRequest_;
 
-  /*远程服务器地址，端口，已经请求内容*/
+  /*远程服务器地址，端口，请求内容（path）*/
   char* remoteServerHostname_ = "127.0.0.1";
   int remoteServerPort_ = 80;
   std::string pathOfLauchRequest_;
@@ -99,7 +99,7 @@ class ClientOfLaunchRequest {
   const int kMaxBytesOfBuff = 2048;
   std::vector<char> contentOfReponse_(kMaxBytesOfBuff);
 
-  /* 解析url,并且写入成员变量remoteServerHostname_及remoteServerPort_，pathOfLauchRequest_*/
+  /* 解析url,并且写入数据成员remoteServerHostname_及remoteServerPort_，pathOfLauchRequest_*/
   void ResolveUrl(const std::string& urlOfLanuchRequest);
 
 };
