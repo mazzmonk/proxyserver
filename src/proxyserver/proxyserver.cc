@@ -39,7 +39,7 @@ void my::ProxyServer::ProcessRequestOfClients() {
  void ContentOfReponse();
  */
 
-/*连接远程服务器地址和端口，绑定socket_*/
+/* 连接远程服务器地址和端口，绑定socket_*/
 void my::ClientOfLaunchRequest::ConnectRemoteServer(char* remoteServerHostname,
                                                     int remoteServerPort) {
   remoteServerHostname = remoteServerHostname_;
@@ -62,37 +62,73 @@ void my::ClientOfLaunchRequest::ConnectRemoteServer(char* remoteServerHostname,
   std::cout << "connect success." << std::endl;
 }
 
-/*构造请求*/
-void my::ClientOfLaunchRequest::ResolveUrl(const std::string& urlOfLanuchRequest) {
-    std::string url = urlOfLanuchRequest;
-    std::size_t first_match_pos = url.find_first_of("/");                          //查询第一个"/"出现的pos值
-    std::string urlProtocol = url.substr(0, (first_match_pos - 1));          //得到url请求的头，http或者https
+/* 构造请求，有如下的几种情况
+ *  1.www.abc.com
+ *  2.www.abc.com/1.jpg
+ *  3.www.abc.com:8080
+ *  4.www.abc.com:8080/1.jpg
+ *  解析上述的url
+ */
+void my::ClientOfLaunchRequest::SplitUrl(const std::string& urlOfLanuchRequest) {
+  std::string url = urlOfLanuchRequest;
 
-    /*分解出url中的host，port，内容（path）*/
-    const std::string requestHttp("http");
-    const std::string requestHttps("https");
-    if (urlProtocol.compare(requestHttp) == 0 || urlProtocol.compare(requestHttps) == 0) {
-      std::size_t second_match_pos = url.find_first_of("/", first_match_pos + 1);  //查询第二个"/"出现的pos值
-      std::size_t third_match_pos = url.find_first_of("/", second_match_pos + 1);  //查询第三个"/"出现的pos值
+  /* XXX 检查是否包含":"， 即是否包含端口 */
+  std::size_t isFound = url.find(":");
+  if (isFound != std::string::npos) {
+    remoteServerHostname_ = url.substr(0, isFound);
+    remoteServerPort_ = url.substr(isFound + 1);
 
-      /*   */
-      remoteServerHostname_ = url.substr(second_match_pos + 1,
-                                         third_match_pos - second_match_pos - 1);
-
-      /* */
-      pathOfLauchRequest_ = url.substr(third_match_pos);
-
-
+    /* 检查是否包含path部分*/
+    std::size_t is_first_match_colon_pos = url.find_first_of("/");
+    if (is_first_match_colon_pos != std::string::npos) {
+      pathOfLauchRequest_ = url.substr(is_first_match_colon_pos);
     }
+    pathOfLauchRequest_ = "";
+  }
 
-
+  /* XXX 不包含":"时候，检查是否有path部分 */
+  std::size_t is_first_match_colon_pos = url.find_first_of("/");
+  if (is_first_match_colon_pos != std::string::npos) {
+    remoteServerHostname_ = url.substr(0, is_first_match_colon_pos);
+    pathOfLauchRequest_ = url.substr(is_first_match_colon_pos);
+  }
+  remoteServerHostname_ = url;
+  pathOfLauchRequest_ = "";
 }
 
+/* 主要处理url是否带有http/https头 */
+void my::ClientOfLaunchRequest::ResolveUrl(std::string& urlOfLanuchRequest) {
+  std::string url = urlOfLanuchRequest;
+
+  /* 对比url开头是否是以http或者https开头 */
+  const std::string requestHttp("http");
+  const std::string requestHttps("https");
+  if (url.compare(requestHttp) == 0 || url.compare(requestHttps) == 0) {
+    std::size_t first_match_colon_pos = url.find_first_of(":");     //第一个匹配的冒号的pos值
+
+    std::string splitedUrl = url.substr(first_match_colon_pos + 3);
+    SplitUrl(splitedUrl);
+  }
+  SplitUrl(url);
+}
+
+/* 构造GET头，并发送*/
 void my::ClientOfLaunchRequest::SendClientOfRequest(std::string& urlOfRequest) {
   std::string requestMethod = "GET";
-  std::string urlOfLanuchRequest_;
   std::string httpVersion = "HTTP/1.0\r\n";
-  std::string hostname = "";
+  std::string hostname = "Host" + remoteServerHostname_ + "\r\n";
+  std::string accept = "Accept: */*\r\n";
+  std::string status = "Connection: close\r\n\r\n";
+
+  std::string getHead = requestMethod + urlOfRequest + httpVersion + hostname + accept + status;
+
+  std::cout << getHead << std::endl;
+
+  socket_(io_service_);
+  ConnectRemoteServer(remoteServerHostname_, remoteServerPort_);
+  size_t length = socket_.write_some(boost::asio::buffer(getHead));
+
+  std::cout << "send data length: " << length << std::endl;
 
 }
 
