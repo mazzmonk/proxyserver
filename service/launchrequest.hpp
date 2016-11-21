@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
@@ -20,24 +21,24 @@ namespace my {
  */
 class ClientOfLaunchRequest {
  public:
-  ClientOfLaunchRequest(boost::asio::io_service io_service, boost::asio::ip::tcp::socket socket,
-                        std::string urlOfLanuchRequest)
-      : io_service_(io_service),
-        socket_(socket),
-        urlOfLanuchRequest_(urlOfLanuchRequest) {
-    std::cout << "ClientOfLaunchRequest begin work." << std::endl;
-    ResolveUrl(urlOfLanuchRequest_);
+  ClientOfLaunchRequest(std::string & urlOfLanuchRequest) {
+    std::cout << "ClientOfLauchRequest class began." << std::endl;
   }
+  ~ClientOfLaunchRequest() {
+    std::cout << "ClientOfLauchRequest class ended." << std::endl;
+  }
+
   /*连接远程服务器及端口*/
   void ConnectRemoteServer(char* remoteServerHostname, int remoteServerPort);
 
   /* 构造http请求*/
   void SendClientOfRequest(std::string& urlOfRequest);
-  void ContentOfReponse();
+  void ContentOfReponse(std::vector<char> & contentOfReponse);
 
  private:
-  ClientOfLaunchRequest() {                       //不允许构造无参数构造函数
-  }
+  /*存储从服务器返回内容*/
+  std::vector<char> contentOfReponse_;
+
   boost::asio::io_service io_service_;
   boost::asio::ip::tcp::socket socket_;
   std::string urlOfLanuchRequest_;
@@ -46,10 +47,6 @@ class ClientOfLaunchRequest {
   char* remoteServerHostname_ { "127.0.0.1" };
   int remoteServerPort_ { 80 };
   std::string pathOfLauchRequest_;
-
-  /*存储从服务器返回内容*/
-  const int kMaxBytesOfBuff = 2048;
-  std::vector<char> contentOfReponse_(kMaxBytesOfBuff);
 
   /* 拆分url，格式为以下几种
    * 1.domain.com/abc.jgp

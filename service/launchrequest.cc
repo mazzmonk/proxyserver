@@ -6,6 +6,14 @@
  */
 
 #include "launchrequest.hpp"
+#include "boost/lexical_cast.hpp"
+
+/* 转换函数，string to char* */
+char * ConverStrTochar(std::string inputStr) {
+  char* out = new char[inputStr.length() + 1];
+  std::strcpy(out, inputStr.c_str());
+  return out;
+}
 
 /* 连接远程服务器地址和端口，绑定socket_*/
 void my::ClientOfLaunchRequest::ConnectRemoteServer(char* remoteServerHostname,
@@ -43,8 +51,13 @@ void my::ClientOfLaunchRequest::SplitUrl(const std::string& urlOfLanuchRequest) 
   /* XXX 检查是否包含":"， 即是否包含端口 */
   std::size_t isFound = url.find(":");
   if (isFound != std::string::npos) {
-    remoteServerHostname_ = url.substr(0, isFound);
-    remoteServerPort_ = url.substr(isFound + 1);
+
+    /* 类型转换string to char* */
+    std::string remoteServerHostname = url.substr(0, isFound);
+    remoteServerHostname_ = ConverStrTochar(remoteServerHostname);
+
+    /* 类型转换string to int */
+    remoteServerPort_ = boost::lexical_cast<int>(url.substr(isFound + 1));
 
     /* 检查是否包含path部分*/
     std::size_t is_first_match_colon_pos = url.find_first_of("/");
@@ -57,10 +70,14 @@ void my::ClientOfLaunchRequest::SplitUrl(const std::string& urlOfLanuchRequest) 
   /* XXX 不包含":"时候，检查是否有path部分 */
   std::size_t is_first_match_colon_pos = url.find_first_of("/");
   if (is_first_match_colon_pos != std::string::npos) {
-    remoteServerHostname_ = url.substr(0, is_first_match_colon_pos);
+
+    /* 类型转换string to char* */
+    std::string remoteServerHostname = url.substr(0, is_first_match_colon_pos);
+    remoteServerHostname_ = ConverStrTochar(remoteServerHostname);
+
     pathOfLauchRequest_ = url.substr(is_first_match_colon_pos);
   }
-  remoteServerHostname_ = url;
+  remoteServerHostname_ = ConverStrTochar(url);
   pathOfLauchRequest_ = "";
 }
 
@@ -84,7 +101,8 @@ void my::ClientOfLaunchRequest::ResolveUrl(std::string& urlOfLanuchRequest) {
 void my::ClientOfLaunchRequest::SendClientOfRequest(std::string& urlOfRequest) {
   std::string requestMethod = "GET";
   std::string httpVersion = "HTTP/1.0\r\n";
-  std::string hostname = "Host" + remoteServerHostname_ + "\r\n";
+  std::string remoteServerHostname(remoteServerHostname_);
+  std::string hostname = "Host" + remoteServerHostname + "\r\n";
   std::string accept = "Accept: */*\r\n";
   std::string status = "Connection: close\r\n\r\n";
 
@@ -92,18 +110,16 @@ void my::ClientOfLaunchRequest::SendClientOfRequest(std::string& urlOfRequest) {
 
   std::cout << getHead << std::endl;
 
-  socket_(io_service_);
+  ResolveUrl(urlOfLanuchRequest_);
   ConnectRemoteServer(remoteServerHostname_, remoteServerPort_);
   size_t length = socket_.write_some(boost::asio::buffer(getHead));
 
   std::cout << "send data length: " << length << std::endl;
-
 }
 
-void my::ClientOfLaunchRequest::ContentOfReponse() {
-
+void my::ClientOfLaunchRequest::ContentOfReponse(std::vector<char> & contentOfReponse) {
+  socket_.read_some(boost::asio::buffer(contentOfReponse));
+  std::cout << "recive from: " << socket_.remote_endpoint().address() << std::endl;
+  std::cout << &contentOfReponse[0] << std::endl;
 }
-
-
-
 
