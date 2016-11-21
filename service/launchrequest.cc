@@ -20,13 +20,15 @@ void my::ClientOfLaunchRequest::ConnectRemoteServer(char* remoteServerHostname,
                                                     int remoteServerPort) {
   remoteServerHostname = remoteServerHostname_;
   remoteServerPort = remoteServerPort_;
-  boost::asio::ip::tcp::resolver resolver(socket_.get_io_service());
+  boost::asio::ip::tcp::resolver resolver(io_service_);
+
   boost::asio::ip::tcp::resolver::query queryEndpoints(
       remoteServerHostname, boost::lexical_cast<std::string>(remoteServerPort));
   boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(queryEndpoints);
   boost::asio::ip::tcp::resolver::iterator end;
   boost::system::error_code ec = boost::asio::error::host_not_found;
 
+  socket_(io_service_);
   for (; ec && endpoint_iterator != end; ++endpoint_iterator) {
     socket_.close();
     socket_.connect(*endpoint_iterator, ec);
